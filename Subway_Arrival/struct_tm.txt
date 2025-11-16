@@ -1,0 +1,11 @@
+struct tm {
+    int tm_sec;   // 초 (0~60)
+    int tm_min;   // 분 (0~59)
+    int tm_hour;  // 시 (0~23)
+    int tm_mday;  // 일 (1~31)
+    int tm_mon;   // 월 (0~11, 0=1월)
+    int tm_year;  // 년(1900 기준)
+    int tm_wday;  // 요일 (0=일요일 ~ 6=토요일)
+    int tm_yday;  // 연중 일
+    int tm_isdst; // 서머타임 여부
+};

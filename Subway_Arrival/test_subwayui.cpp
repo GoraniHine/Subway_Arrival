@@ -5,6 +5,10 @@
 #include <ctime>
 #include <vector>
 #include <algorithm>
+#include <locale.h>
+#include <ncurses.h>
+#include <unistd.h> // sleep
+#include <string>
 
 using json = nlohmann::json;
 using namespace std;
@@ -56,6 +60,12 @@ string getAPIJson() {
 int main() {
     string jsonStr = getAPIJson(); // getAPIJson() → API 호출 후 받은 문자열
 
+    setlocale(LC_ALL, ""); // 로케일 설정
+    initscr();             // ncurses 시작
+    noecho();              // 입력 문자 표시 안 함
+    curs_set(FALSE);       // 커서 숨기기
+    start_color(); 
+
     if (jsonStr.rfind("<html", 0) == 0) {
         cerr << "응답이 HTML입니다! JSON이 아닙니다." << endl;
         cerr << "=== Response ===\n" << jsonStr << endl;
@@ -65,6 +75,7 @@ int main() {
     try {
         json j = json::parse(jsonStr);
         auto data = j["data"]; // j["data"] → JSON 객체에서 "data" 키에 해당하는 값 추출
+
         // auto → 타입 자동 추론, 여기서는 nlohmann::json 타입이 됨
 
         time_t now = time(NULL); // time(NULL) : 현재 시간을 반환
@@ -106,10 +117,12 @@ int main() {
         sort(arrivalTimes.begin(), arrivalTimes.end());
 
         cout << "두류역 다음 열차 3개 (몇 분 후 도착):" << endl;
+        mvprintw(0, 0, "두류역 다음 열차 3개 (몇 분 후 도착):");
         for (int i = 0; i < 3 && i < arrivalTimes.size(); i++) {
             int diff = arrivalTimes[i] - nowMin;
             cout << " - " << diff << "분 후" << endl;
-        }
+            mvprintw(i + 2, 0, "- %d분 후 도착", diff);
+        }        
 
     } catch (json::parse_error& e) {
         cerr << "JSON 파싱 실패: " << e.what() << endl; // cerr: c++에서 오류 메시지를 표준 에러 스트림으로 버퍼링 없이 출력하는 객체
@@ -117,5 +130,9 @@ int main() {
         return 1;
     }
 
+    refresh();
+    getch();           
+    endwin();
+    
     return 0;
 }
