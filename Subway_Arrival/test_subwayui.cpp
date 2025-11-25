@@ -8,7 +8,6 @@
 #include <locale.h>
 #include <ncurses.h>
 #include <unistd.h> // sleep
-#include <string>
 
 using json = nlohmann::json;
 using namespace std;
@@ -96,7 +95,7 @@ int main() {
         vector<int> arrivalTimes; // vector<int>는 정수형 데이터를 여러 개 저장할 수 있는 동적 배열
 
         for (auto& row : data) {
-            if (row["역명"] == "두류" && row["요일별"] == todayType) {
+            if (row["역명"] == "감삼" && row["요일별"] == todayType) {
                 for (auto it = row.begin(); it != row.end(); ++it) {
                     string key = it.key();
                     if (key == "역명" || key == "요일별" || key == "구분") continue;
@@ -116,15 +115,43 @@ int main() {
 
         sort(arrivalTimes.begin(), arrivalTimes.end());
 
-        cout << "두류역 다음 열차 3개 (몇 분 후 도착):" << endl;
-        mvprintw(0, 0, "두류역 다음 열차 3개 (몇 분 후 도착):");
+        // cout << "감삼역 다음 열차 3개 (몇 분 후 도착):" << endl;
+        const char* title = "감삼역 다음 열차 3개 (몇 분 후 도착):";
+        int titleX = (COLS - strlen(title)) / 2;  // COLS는 ncurses 전체 화면 가로
+        mvprintw(0, titleX, "%s", title);
+
         for (int i = 0; i < 3 && i < arrivalTimes.size(); i++) {
             int diff = arrivalTimes[i] - nowMin;
-            cout << " - " << diff << "분 후" << endl;
-            mvprintw(i + 2, 0, "- %d분 후 도착", diff);
-        }        
+            char buffer[50];
+            sprintf(buffer, "- %d분 후 도착", diff);
 
-    } catch (json::parse_error& e) {
+            // 중앙 좌표 계산
+            int x = (COLS - strlen(buffer)) / 2;
+
+            // 출력 (i+2행)
+            mvprintw(i + 2, x, "%s", buffer);
+        }        
+        
+        // (OPTIONAL) 첫 번째 열차 위치 5칸 지도
+        int diff = arrivalTimes[0] - nowMin;
+
+        int pos = diff / 2;
+        if (pos > 4) pos = 4;
+        pos = 4 - pos;
+
+        char line[20];
+        for (int i = 0; i < 5; i++) {
+            if (i == pos) line[0 + i * 2] = '*';
+            else line[0 + i * 2] = '-';
+        }
+        line[1] = ' '; line[3] = ' '; line[5] = ' '; line[7] = ' ';
+        line[9] = '\0';
+
+        int mapX = (COLS - strlen(line)) / 2;
+        mvprintw(6, mapX, "%s", line);
+    } 
+    
+    catch (json::parse_error& e) {
         cerr << "JSON 파싱 실패: " << e.what() << endl; // cerr: c++에서 오류 메시지를 표준 에러 스트림으로 버퍼링 없이 출력하는 객체
         cerr << "=== Response ===\n" << jsonStr << endl;
         return 1;
