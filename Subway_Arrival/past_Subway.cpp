@@ -259,44 +259,30 @@ void runUI()
 void runServo()
 {
     dist sonic;
-    static bool prevTrainArrived = false;   // 이전 루프 trainArrived 상태
-    static time_t lastServoTime = 0;        // 마지막 서보 동작 시간
-    const int servoCooldown = 20;           // 초 단위, 서보 최소 재동작 시간
 
     while(running)
     {
-        digitalWrite(0, 0); // 초음파 측정
+        digitalWrite(0, 0);
         delayMicroseconds(2);
         digitalWrite(0, 1);
         delayMicroseconds(10);
         digitalWrite(0, 0);   
 
-        while(digitalRead(1) == 0) sonic.measures(micros());
-        while(digitalRead(1) == 1) sonic.measuree(micros());
-
-        static bool servoUp = false;
-        static time_t servoStartTime = 0;
-
-        time_t currentTime = time(NULL);
-
-        // trainArrived가 새로 true가 되고, 거리 조건 만족, 쿨다운 시간 지남
-        if(trainArrived && !prevTrainArrived && sonic.calc() > 30 && difftime(currentTime, lastServoTime) > servoCooldown)
+        while(digitalRead(1) == 0)
         {
-            servorControlUp();
-            servoUp = true;
-            servoStartTime = currentTime;
-            lastServoTime = currentTime;       // 마지막 동작 시간 기록
+            sonic.measures(micros());
+        }
+        while(digitalRead(1) == 1)
+        {
+            sonic.measuree(micros());
         }
         
-        // 10초 지나면 내려가기
-        if(servoUp && difftime(currentTime, servoStartTime) >= 10)
+        if(trainArrived == true && 30 < sonic.calc())
         {
+            servorControlUp();
+            delay(5000);
             servorControlDown();
-            servoUp = false;
         }
-
-        prevTrainArrived = trainArrived;
-
         delay(100);
     }
 }
