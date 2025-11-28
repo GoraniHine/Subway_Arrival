@@ -18,6 +18,8 @@
 using namespace std;
 using json = nlohmann::json;
 
+int servoPos = 5;
+
 atomic<bool> trainArrived(false); // 기차 도착 플래그
 atomic<bool> running(true); // 종료를 위한 플래그
 json trainData;
@@ -212,8 +214,8 @@ void runUI()
         }
         */
         
-        // 과거 열차 제거
-        while (!arrivalTimes.empty() && arrivalTimes[0] <= nowMin)
+        // 과거 열차 제거 (0분 제외)
+        while (!arrivalTimes.empty() && arrivalTimes[0] < nowMin)
         {
             arrivalTimes.erase(arrivalTimes.begin());
         }    
@@ -259,7 +261,7 @@ void runUI()
 void runServo()
 {
     dist sonic;
-    static bool prevTrainArrived = false;   // 이전 루프 trainArrived 상태
+
     static time_t lastServoTime = 0;        // 마지막 서보 동작 시간
     const int servoCooldown = 20;           // 초 단위, 서보 최소 재동작 시간
 
@@ -280,12 +282,12 @@ void runServo()
         time_t currentTime = time(NULL);
 
         // trainArrived가 새로 true가 되고, 거리 조건 만족, 쿨다운 시간 지남
-        if(trainArrived && !prevTrainArrived && sonic.calc() > 30 && difftime(currentTime, lastServoTime) > servoCooldown)
+        if(trainArrived && !servoUp && sonic.calc() > 30 && difftime(currentTime, lastServoTime) > servoCooldown)
         {
             servorControlUp();
             servoUp = true;
             servoStartTime = currentTime;
-            lastServoTime = currentTime;       // 마지막 동작 시간 기록
+            lastServoTime = currentTime; // 마지막 동작 시간 기록
         }
         
         // 10초 지나면 내려가기
@@ -295,23 +297,17 @@ void runServo()
             servoUp = false;
         }
 
-        prevTrainArrived = trainArrived;
-
         delay(100);
     }
 }
 
 int servorControlUp()
 {
-    int i;
-    int dir = 1;
-    int pos = 5;
-    
-    while(1)
+    int dir = -1;
+    while(servoPos > 5)
     {
-        pos += dir;
-        softPwmWrite(SERVO, pos);
-        if(pos >= 25) break;
+        servoPos += dir;
+        softPwmWrite(SERVO, servoPos);
         delay(10);
     }
 
@@ -320,15 +316,11 @@ int servorControlUp()
 
 int servorControlDown()
 {
-    int i;
-    int dir = -1;
-    int pos = 25;
-
-    while(1)
+    int dir = 1;
+    while(servoPos < 14)
     {
-        pos += dir;
-        softPwmWrite(SERVO, pos);
-        if(pos <= 5) break;
+        servoPos += dir;
+        softPwmWrite(SERVO, servoPos);
         delay(10);
     }
 
